@@ -20,6 +20,7 @@ use rustc_interface::{interface, Queries};
 use rustc_middle::ty::Ty;
 use rustc_target::abi;
 
+use std::collections::BTreeMap;
 use std::env;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
@@ -70,21 +71,36 @@ impl rustc_driver::Callbacks for DefaultCallbacks {}
 
 #[derive(Default)]
 struct TypeSize {
-    sizes: Vec<(String, u64)>,
+    sizes: BTreeMap<String, u64>,
 }
 
 impl TypeSize {
     fn add_type(&mut self, ty: Ty<'_>, item: &Item<'_>, layout: abi::Layout<'_>) {
         self.sizes
-            .push((format!("{ty:?} - {:?}", item.span), layout.size().bytes()));
+            .insert(format!("{ty:?} - {:?}", item.span), layout.size().bytes());
     }
 
-    fn print_typesizes(&mut self) {
-        self.sizes
-            .sort_by_key(|(name, bytes)| (*bytes, name.clone()));
+    fn print_typesizes(&self) {
+        let mut sorted = Vec::from_iter(self.sizes.iter());
+        sorted.sort_by_key(|(name, bytes)| (*bytes, name.clone()));
 
-        for (name, bytes) in self.sizes.iter() {
-            println!("{bytes} bytes : {name}");
+        if let Ok(bin) = env::var("CARGO_BIN_NAME") {
+            println!("Inspecting layout of bin: {bin}");
+        } else if let Ok(lib) = env::var("CARGO_PKG_NAME") {
+            println!("Inspecting layout of lib: {lib}");
+        }
+
+        let max_bytes_len = if let Some((_, largest)) = sorted.last() {
+            format!("{largest}").len()
+        } else {
+            0
+        };
+
+        for (name, bytes) in sorted {
+            let bytes_str = format!("{bytes}");
+            let pad =
+                String::from_iter(std::iter::repeat(" ").take(max_bytes_len - bytes_str.len()));
+            println!("{pad}{bytes_str}\t{name}");
         }
     }
 }
@@ -169,7 +185,7 @@ fn read_sys_root(sys_root_arg: &Option<&str>) -> String {
     //    - SYSROOT
     //    - RUSTUP_HOME, MULTIRUST_HOME, RUSTUP_TOOLCHAIN, MULTIRUST_TOOLCHAIN
 
-    let sys_root = sys_root_arg
+    sys_root_arg
         .map(PathBuf::from)
         .or_else(|| std::env::var("SYSROOT").ok().map(PathBuf::from))
         .or_else(|| {
@@ -203,9 +219,7 @@ fn read_sys_root(sys_root_arg: &Option<&str>) -> String {
         .map(|pb| pb.to_string_lossy().to_string())
         .expect(
             "need to specify SYSROOT env var during clippy compilation, or use rustup or multirust",
-        );
-
-    sys_root
+        )
 }
 
 pub fn main() {
@@ -259,7 +273,6 @@ pub fn main() {
 
         if env::var("CARGO_PRIMARY_PACKAGE").is_ok() {
             let mut typesize = TypeSize::default();
-
             rustc_driver::RunCompiler::new(&args, &mut typesize).run()?;
 
             typesize.print_typesizes();
