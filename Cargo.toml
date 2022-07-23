@@ -1,0 +1,18 @@
+[package]
+name = "cargo-typesize"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[[bin]]
+name = "cargo-typesize"
+test = false
+path = "src/main.rs"
+
+[[bin]]
+name = "typesize-driver"
+path = "src/driver.rs"
+
+[dependencies]
