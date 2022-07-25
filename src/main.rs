@@ -10,16 +10,31 @@ const CARGO_TYPESIZE_HELP: &str = r#"Lists type sizes for all types in a package
 
 Usage:
     cargo typesize [options] [--] [<opts>...]
+
+Options:
+    --build                  Run with cargo build
+    --check                  Run with cargo check (default)
+    --test                   Run with cargo test
+    -h, --help               Print this message
+    -V, --version            Print version info and exit
 "#;
 
 fn show_help() {
     println!("{}", CARGO_TYPESIZE_HELP);
 }
 
+fn show_version() {
+    println!("{} {}", env!("CARGO_BIN_NAME"), env!("CARGO_PKG_VERSION"));
+}
+
 pub fn main() {
-    // Check for version and help flags even when invoked as 'cargo-clippy'
     if env::args().any(|a| a == "--help" || a == "-h") {
         show_help();
+        return;
+    }
+
+    if env::args().any(|a| a == "--version" || a == "-V") {
+        show_version();
         return;
     }
 
@@ -36,11 +51,29 @@ struct TypeSizeCmd {
 
 impl TypeSizeCmd {
     fn new(old_args: impl Iterator<Item = String>) -> Self {
-        let cargo_subcommand = "check";
+        let mut cargo_subcommand = "check";
         let args = vec![];
         let mut typesize_args: Vec<String> = vec![];
 
-        typesize_args.extend(old_args);
+        for arg in old_args {
+            match arg.as_str() {
+                "--build" => {
+                    cargo_subcommand = "build";
+                    continue;
+                }
+                "--check" => {
+                    cargo_subcommand = "check";
+                    continue;
+                }
+                "--test" => {
+                    cargo_subcommand = "test";
+                    continue;
+                }
+                "--" => break,
+                _ => {}
+            }
+            typesize_args.push(arg);
+        }
 
         Self {
             cargo_subcommand,
