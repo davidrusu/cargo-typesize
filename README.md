@@ -2,6 +2,28 @@
 
 List the size of all types in a Rust crate
 
+## Install + Usage
+
+Cargo typesize depends on nightly for building and running, this is a restriction imposed by rustc to prevent linking against the rustc compiler on stable.
+
+```
+# Add the necessary components to the nightly compiler
+rustup default nightly
+rustup component add rust-src rustc-dev llvm-tools-preview
+```
+
+```
+# Install cargo-typesize using the nightly compiler
+cargo +nightly install cargo-typesize
+```
+
+Then make sure all invocations are done under nightly:
+
+```
+cargo +nightly typesize
+```
+
+
 ## Sample output
 Output of running `cargo typesize` on [sn_consensus](https://github.com/maidsafe/sn_consensus)
 
@@ -62,5 +84,4 @@ Inspecting layout of lib: sn_consensus
 488	consensus::Consensus<T> - src/consensus.rs:12:1: 20:2 (#0)
 496	sn_handover::Handover<T> - src/sn_handover.rs:14:1: 17:2 (#0)
 544	sn_membership::Membership<T> - src/sn_membership.rs:16:1: 21:2 (#0)
-    Finished dev [unoptimized + debuginfo] target(s) in 9.06s
 ```
