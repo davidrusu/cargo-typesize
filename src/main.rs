@@ -12,9 +12,9 @@ Usage:
     cargo typesize [options] [--] [<opts>...]
 
 Options:
-    --build                  Run with cargo build
-    --check                  Run with cargo check (default)
-    --test                   Run with cargo test
+    build                    Run with cargo build
+    check                    Run with cargo check (default)
+    test                     Run with cargo test
     -h, --help               Print this message
     -V, --version            Print version info and exit
 "#;
@@ -52,27 +52,27 @@ struct TypeSizeCmd {
 impl TypeSizeCmd {
     fn new(old_args: impl Iterator<Item = String>) -> Self {
         let mut cargo_subcommand = "check";
-        let args = vec![];
-        let mut typesize_args: Vec<String> = vec![];
+        let mut args = vec![];
+        let typesize_args: Vec<String> = vec![];
 
         for arg in old_args {
             match arg.as_str() {
-                "--build" => {
+                "build" => {
                     cargo_subcommand = "build";
                     continue;
                 }
-                "--check" => {
-                    cargo_subcommand = "check";
+                "check" => {
+                    cargo_subcommand = "check --no-run";
                     continue;
                 }
-                "--test" => {
+                "test" => {
                     cargo_subcommand = "test";
                     continue;
                 }
                 "--" => break,
                 _ => {}
             }
-            typesize_args.push(arg);
+            args.push(arg);
         }
 
         Self {
