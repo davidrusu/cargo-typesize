@@ -62,11 +62,12 @@ impl TypeSizeCmd {
                     continue;
                 }
                 "check" => {
-                    cargo_subcommand = "check --no-run";
+                    cargo_subcommand = "check";
                     continue;
                 }
                 "test" => {
                     cargo_subcommand = "test";
+                    args.push("--no-run".to_string());
                     continue;
                 }
                 "--" => break,
