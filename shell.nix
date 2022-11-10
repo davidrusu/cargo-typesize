@@ -13,9 +13,6 @@ in
     buildInputs = [
       rustup ruststable
 
-      # for tokio consol
-
-      tokio-console
 
       # for sn_node_gui experiments
 

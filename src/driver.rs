@@ -133,8 +133,8 @@ impl rustc_driver::Callbacks for TypeSize {
                     _ => continue,
                 }
 
-                let ty = tcx.type_of(item.def_id);
-                let param_env = tcx.param_env(item.def_id);
+                let ty = tcx.type_of(item.owner_id.def_id);
+                let param_env = tcx.param_env(item.owner_id.def_id);
                 match tcx.layout_of(param_env.and(ty)) {
                     Ok(layout) => {
                         self.add_type(ty, item, layout.layout);
