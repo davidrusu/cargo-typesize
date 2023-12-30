@@ -1,5 +1,4 @@
 #![feature(rustc_private)]
-#![feature(once_cell)]
 #![cfg_attr(feature = "deny-warnings", deny(warnings))]
 // warn on lints, that are included in `rust-lang/rust`s bootstrap
 #![warn(rust_2018_idioms, unused_lifetimes)]
@@ -12,12 +11,15 @@ extern crate rustc_driver;
 extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_middle;
+extern crate rustc_session;
 extern crate rustc_target;
 
 use rustc_driver::Compilation;
 use rustc_hir::Item;
 use rustc_interface::{interface, Queries};
 use rustc_middle::ty::Ty;
+use rustc_session::config::ErrorOutputType;
+use rustc_session::EarlyDiagCtxt;
 use rustc_target::abi;
 
 use std::collections::BTreeMap;
@@ -115,7 +117,7 @@ impl rustc_driver::Callbacks for TypeSize {
             panic!("Already computed sizes");
         }
         // Analyze the program and inspect the types of definitions.
-        queries.global_ctxt().unwrap().take().enter(|tcx| {
+        queries.global_ctxt().unwrap().enter(|tcx| {
             for id in tcx.hir().items() {
                 let hir = tcx.hir();
                 let item = hir.item(id);
@@ -134,6 +136,7 @@ impl rustc_driver::Callbacks for TypeSize {
                 }
 
                 let ty = tcx.type_of(item.owner_id.def_id);
+                let ty = ty.instantiate_identity();
                 let param_env = tcx.param_env(item.owner_id.def_id);
                 match tcx.layout_of(param_env.and(ty)) {
                     Ok(layout) => {
@@ -223,7 +226,8 @@ fn read_sys_root(sys_root_arg: &Option<&str>) -> String {
 }
 
 pub fn main() {
-    rustc_driver::init_rustc_env_logger();
+    let early_dcx = EarlyDiagCtxt::new(ErrorOutputType::default());
+    rustc_driver::init_rustc_env_logger(&early_dcx);
     exit(rustc_driver::catch_with_exit_code(move || {
         let mut orig_args: Vec<String> = env::args().collect();
         let sys_root_arg = arg_value(&orig_args, "--sysroot", |_| true);
